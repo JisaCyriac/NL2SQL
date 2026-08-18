@@ -86,34 +86,34 @@ def run_query(q:str)-> pd.DataFrame | None:
     
 """Valid user request is converted to SQL query"""
 def nl2sql(user_question:str, dept:str)->str:
-    system_prompt=f"""You are an AI assistant who converts user question which is provided in natural language into SQL queries that follows SQLite3 dialect. 
-    **Only** answer questions using the tables and columns that are defined in the provided schema. **Never** try to guess or invent table or column names.
-    If user asks question that is unrelated, out of scope or unanswerable using the provided database schema (e.g., greetings, casual chats, or non-sensical 
-    words), **only** reply with "The request is not related to the provided database" and nothing else. Only if the user question is answerable using the 
-    provided database, generate SELECT queries but do not generate any query that uses DDL or DML commands
-    to create, alter, modify, add, delete or drop the table or table data. But if the user question contains retrieval tasks that 
-    returns multiple tables then **only** reply with "Please provide only one request at a time". If the user question contains **only** retrieval tasks that 
-    is answerable by returning a single table using UNION then provide the SQL query. If the user question asks to modify the table data or schema using commands 
-    like ALTER, DELETE, TRUNCATE, DROP, CREATE, UPDATE, INSERT, then **only** reply with "Modification to the database is not allowed". While generating SQL 
-    query, only output the SQL query and no other explanation, reasoning, or text in any case. Enforce '{dept}' as the department for all SQL queries. This 
-    means that every SQL query generated must filter results to only the '{dept}' department. Results from other departments must **never** be returned under
-    any condition to the user. The user only has access to the '{dept}' data. Always include a WHERE clause that filters by '{dept}' department in the SQL 
-    query that you generate, but ensure that the final SQL query is still valid. In case of queries that have join conditions, use this filter with WHERE 
-    clause on Employee.Department. Always make sure the SQL is valid. 
+    system_prompt=f"""You are an AI assistant who converts user question provided in natural language into SQL queries that follows SQLite3 dialect. 
+    **Only** answer questions from provided schema. **Never** guess or invent table or columns.
+    If question is unrelated, out of scope or unanswerable using provided schema (e.g., greetings, casual chats, or non-sensical 
+    words), **only** reply with {INVALID_REQUEST}. 
     
-    Do not include any markdown code blocks for the SQL query and provide only the query without any formatting or code blocks around it. 
+    If question is answerable using provided database then:
+    - For DDL or DML request types, except pure retrieval, that try to create, alter, update, insert, modify, add, truncate, delete or 
+    drop table or its data, change schema, do not generate any query and **only** reply with {MODIFICATION_WARNING}. 
+    - For a single retrieval task, generate the SQL query directly.
+    - For multiple retrieval tasks, combine them into a SELECT query using any valid SQLite technique (joins, subqueries, set operations,
+    etc.) that returns a single table and return the query but if you cannot combine to generate a single table then **only** reply with {MULTI_REQUEST}.   
+    
+    Enforce '{dept}' as the department for all SQL queries. **Never** return other department data.
+    Always include a WHERE clause that filters by '{dept}' department in the SQL query that you generate. 
+    In case of queries that have join conditions, use this filter with WHERE clause on Employee.Department. Always make sure the SQL is valid. 
+    
+    For SQL queries, output only the raw query –no code blocks, formattings or explanations. 
     The schema is as below:
     {db_schema()} 
     A few examples of user question and what the response should look like is provided below:
     Example questions a user might ask:
-    - *"Who are the software engineers?"* -> SELECT * FROM Employee WHERE Department = '{dept}' AND Role = 'Software Engineer';
     - *"Which employees have an AWS certification?"* -> SELECT e.Name FROM Employee e JOIN Certification c ON e.EmployeeId = c.EmployeeId WHERE e.Department = '{dept}' AND c.CertificationName LIKE '%AWS%';
     - *"What is the average salary?"* -> SELECT AVG(SalaryAmount) FROM Employee WHERE Department = '{dept}';
     - *"List employees who started after 2023 and their certifications"* -> SELECT e.Name, c.CertificationName, c.DateAchieved FROM Employee e LEFT JOIN Certification c ON e.EmployeeId = c.EmployeeId WHERE e.Department = '{dept}' AND e.EmploymentStartDate > '2023-12-31';
     - *"Who has the highest remaining benefits balance?"* -> SELECT e.Name, b.RemainingBalance FROM Employee e JOIN Benefits b ON e.EmployeeId = b.EmployeeId WHERE e.Department = '{dept}' ORDER BY b.RemainingBalance DESC LIMIT 1;
     - *"What"-> "The request is not related to the provided database"
     - *"Can you create a copy of the employee table"-> "Modification to the database is not allowed"
-    - *"Show me all software engineers, and also show me all employees who have a benefits package with a remaining balance under 1000" -> "SELECT e.Name FROM Employee e JOIN Certification c ON e.EmployeeId = c.EmployeeId WHERE e.Department = '{dept}' UNION SELECT e.Name FROM Employee e JOIN Benefits b ON e.EmployeeId = b.EmployeeId WHERE e.Department = '{dept}' AND b.RemainingBalance > 5000;"
+    - *"Show me all software engineers, and also show me all employees who have a benefits package with a remaining balance under 1000" -> "SELECT e.Name FROM Employee e WHERE e.Department = '{dept}' AND e.Role = 'Software Engineer' UNION SELECT e.Name FROM Employee e JOIN Benefits b ON e.EmployeeId = b.EmployeeId WHERE e.Department = '{dept}' AND b.RemainingBalance < 1000;"
     """
     try:
         response = client.chat.completions.create(
@@ -123,7 +123,7 @@ def nl2sql(user_question:str, dept:str)->str:
                 {"role": "user", "content": user_question}
             ],
             temperature=0.1,
-            max_tokens=500,
+            max_tokens=1500,
             timeout=25.0
         )
         llm_response = response.choices[0].message.content.strip()
@@ -180,7 +180,5 @@ def main():
         
 if __name__ == "__main__":
     main()
-    
-        
     
     
