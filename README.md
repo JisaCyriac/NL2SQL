@@ -13,6 +13,7 @@ Mention the model in main.py (This project uses GROQ API and openai/gpt-oss-120b
 # HOW TO RUN THE APPLICATION
 
 Run python main.py in terminal
+
 To exit type 'exit' or 'quit'
 
 # ARCHITECTURE
@@ -26,17 +27,26 @@ I have assumed that only SELECT queries should be made to run on the data. My re
 ## System prompt
 
 System prompt addresses nuances like considering only SELECT queries and rejecting queries that modify the structure or data.
+
 It also ensures unrelated and vague questions/words are rejected with a message. 
+
 Few shot prompting was implemented by providing variety of examples for context.
 
 ## DESIGN
 run_query() checks that only queries starting with SELECT are executed so that queries that seeped through LLM response are filtered.
+
 Connection failures and empty tables are handled
+
 Appropriate messages are displayed for user information and logging purposes
+
 Retry logic and timeout are implemented in case of LLM connection failure or unresponsive API
+
 Pandas is being used to display results in readable format
+
 db_schema() function is used to store schema instead of a variable to future proof it in case we directly need to extract the schema from db later
+
 It allows multiple SELECT queries if it returns a single table example "UNION" statements
+
 If the query returns multiple tables then it replies with "Please provide only one request at a time".
 
 ## FRAMEWORK CHOSEN
@@ -47,5 +57,6 @@ I didn’t choose semantic kernel framework or langchain as we have a simple and
 # AI TOOLS USED
 
 Chatgpt was used to search for free LLMs and available models in Groq
+
 Genrated queries were doubly validated using AI
 
