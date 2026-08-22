@@ -22,8 +22,8 @@ database="employees.db"
 departments=["Sales", "Marketing", "Engineering"]
 
 def database_connection():
-    """connect to sqlite"""
-    return sqlite3.connect(database)
+    """connect to sqlite enforcing read only with read only database"""
+    return sqlite3.connect(f"file:{database}?mode=ro", uri=True)
 
 def db_schema()->str:
     return """
