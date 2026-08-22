@@ -49,6 +49,8 @@ It allows multiple SELECT queries if it returns a single table example "UNION" s
 
 If the query returns multiple tables then it replies with "Please provide only one request at a time".
 
+We restrict the query to not modify the tables by providing just read only access to the database.
+
 ## FRAMEWORK CHOSEN
 
 I didn’t choose semantic kernel framework or langchain as we have a simple and straight forward workflow use case which doesn’t require working with multiple tools or multiple agents. I have selected lightweight script over custom agent loop as this is a simple workflow involving only 3 tables(queries rarely become complex) and it gives me more control to add guardrails as agentic loop might hallucinate during the loops and remove the mandatory guardrail for department. If generated query already has a WHERE clause then LLM would append the guardrail condition and if query doesn’t have any WHERE clause then it will add the WHERE clause with the guardrail.
